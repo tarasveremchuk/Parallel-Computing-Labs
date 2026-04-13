@@ -10,59 +10,51 @@ public class Lab1_sorting {
         System.out.print("Введіть розмір масиву (N): ");
         int n = sc.nextInt();
         
-        // Генеруємо числа
         int[] originalData = generate(n);
-        
-        // Створюємо вхідний файл
-        String inputFile = "data.txt";
-        saveToFile(originalData, inputFile);
-        System.out.println("Вхідні дані збережено у " + inputFile);
+        saveToFile(originalData, "data.txt");
 
-        // Читаємо масив назад
-        int[] dataFromFile = readFromFile(inputFile, n);
-        
-        int[] dataSerial = dataFromFile.clone();
-        int[] dataParallel = dataFromFile.clone();
-
-        // Послідовне сортування (Bubble Sort)
-        System.out.println("\nЗапуск послідовного алгоритму...");
-        long startS = System.nanoTime(); // юзаємо наносекунди для точності
+        // 1. Послідовне сортування (Еталон)
+        int[] dataSerial = originalData.clone();
+        System.out.println("\nЗапуск послідовного алгоритму (Bubble Sort)...");
+        long startS = System.nanoTime();
         bubbleSort(dataSerial);
         long endS = System.nanoTime();
-        double timeS = (endS - startS) / 1_000_000_000.0; // переводимо в секунди
-        System.out.printf("Послідовно: %.3f сек\n", timeS);
+        double timeSerial = (endS - startS) / 1_000_000_000.0;
+        System.out.printf("Час послідовно: %.4f сек\n", timeSerial);
 
-        // Паралельне сортування (Odd-Even Sort)
-        int threads = Runtime.getRuntime().availableProcessors();
-        System.out.println("\nЗапуск паралельного (" + threads + " потоків)...");
-        long startP = System.nanoTime();
-        parallelSort(dataParallel, threads);
-        long endP = System.nanoTime();
-        double timeP = (endP - startP) / 1_000_000_000.0;
-        System.out.printf("Паралельно: %.3f сек\n", timeP);
         
-        double speedup = timeS / timeP;
-        System.out.printf("\nПрискорення: %.2f разів\n", speedup);
+        int cores = Runtime.getRuntime().availableProcessors();
+        int maxThreads = cores * 2;
+        System.out.println("\nВиявлено ядер: " + cores);
+        System.out.println("Тестування паралельного алгоритму (1 - " + maxThreads + " потоків):");
+        
+        System.out.println("\nПотоки\t| Час (сек)\t| Прискорення");
+        System.out.println("---------------------------------------------");
 
-        // Записуємо результати у файл (Пункт 3 методички)
-        saveResultsToFile(n, timeS, timeP, speedup, "results.txt");
-    }
+        StringBuilder report = new StringBuilder();
+        report.append(String.format("Результати для N=%d на Apple M1\n", n));
+        report.append(String.format("Послідовно: %.6f сек\n\n", timeSerial));
+        report.append("Потоки\t| Час (сек)\t| Прискорення\n");
 
-    // Звичайна бульбашка
-    public static void bubbleSort(int[] arr) {
-        int n = arr.length;
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    int tmp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = tmp;
-                }
-            }
+        for (int threads = 1; threads <= maxThreads; threads++) {
+            int[] dataParallel = originalData.clone();
+            
+            long startP = System.nanoTime();
+            parallelSort(dataParallel, threads);
+            long endP = System.nanoTime();
+            
+            double timeP = (endP - startP) / 1_000_000_000.0;
+            double speedup = timeSerial / timeP;
+
+            String row = String.format("%d\t| %.6f\t| %.2fx", threads, timeP, speedup);
+            System.out.println(row);
+            report.append(row).append("\n");
         }
+
+        saveFinalReport(report.toString(), "results_table.txt");
     }
 
-    // Паралельний Odd-Even Sort на потоках
+    // Паралельний Odd-Even Sort (Метод обміну)
     public static void parallelSort(int[] arr, int numThreads) {
         int n = arr.length;
         final Phaser phaser = new Phaser(numThreads);
@@ -91,7 +83,6 @@ public class Lab1_sorting {
                             arr[j + 1] = temp;
                         }
                     }
-                    // Бар'єр, щоб потоки не побігли далі фази
                     phaser.arriveAndAwaitAdvance();
                 }
             });
@@ -103,7 +94,19 @@ public class Lab1_sorting {
         }
     }
 
-    // Рандомайзер
+    public static void bubbleSort(int[] arr) {
+        int n = arr.length;
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int tmp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = tmp;
+                }
+            }
+        }
+    }
+
     public static int[] generate(int size) {
         Random r = new Random();
         int[] a = new int[size];
@@ -111,32 +114,16 @@ public class Lab1_sorting {
         return a;
     }
 
-    // Запис вхідного масиву
     public static void saveToFile(int[] arr, String name) {
         try (PrintWriter pw = new PrintWriter(new FileWriter(name))) {
             for (int x : arr) pw.println(x);
-        } catch (IOException e) { System.out.println("Помилка запису масиву"); }
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
-    // Збереження результатів замірів (додав у кінці)
-    public static void saveResultsToFile(int n, double ts, double tp, double s, String name) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(name, true))) { // true щоб дописувати в кінець
-            pw.println("--- Результати замірів ---");
-            pw.println("Розмір масиву N: " + n);
-            pw.printf("Час послідовно: %.6f сек\n", ts);
-            pw.printf("Час паралельно: %.6f сек\n", tp);
-            pw.printf("Прискорення: %.2f\n", s);
-            pw.println("--------------------------\n");
-            System.out.println("Фінальні результати записані в " + name);
-        } catch (IOException e) { System.out.println("Помилка запису результатів"); }
-    }
-
-    // Читання файлу
-    public static int[] readFromFile(String name, int size) {
-        int[] arr = new int[size];
-        try (Scanner s = new Scanner(new File(name))) {
-            for (int i = 0; i < size && s.hasNextInt(); i++) arr[i] = s.nextInt();
-        } catch (Exception e) { System.out.println("Помилка читання файлу"); }
-        return arr;
+    public static void saveFinalReport(String content, String name) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(name))) {
+            pw.println(content);
+            System.out.println("\nДетальний звіт збережено у " + name);
+        } catch (IOException e) { e.printStackTrace(); }
     }
 }

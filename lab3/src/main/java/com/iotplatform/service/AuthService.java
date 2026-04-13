@@ -41,8 +41,7 @@ public class AuthService {
                     "Email '" + request.getEmail() + "' is already registered");
         }
 
-        UserRole role = request.getRole() != null ? request.getRole() : UserRole.VIEWER;
-
+        UserRole role = UserRole.VIEWER;
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())

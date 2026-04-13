@@ -31,6 +31,8 @@ public class TelemetryService {
     private final DeviceService deviceService;
     private final ThresholdRuleService thresholdRuleService;
     private final AlertService alertService;
+    private final MaintenanceService maintenanceService;
+    private final WebhookService webhookService;
 
     @Transactional
     public TelemetryReading ingestTelemetry(CreateTelemetryRequest request) {
@@ -47,34 +49,46 @@ public class TelemetryService {
                 .build();
 
         // Rule Engine
-        List<ThresholdRule> rules = thresholdRuleService.getApplicableRules(
-                request.getDeviceId(), request.getMetricType());
+        // Check if device is under maintenance — skip anomaly detection
+        boolean underMaintenance = maintenanceService.isUnderMaintenance(request.getDeviceId());
 
-        for (ThresholdRule rule : rules) {
-            if (rule.isViolated(request.getValue())) {
-                reading.setAnomaly(true);
+        if (!underMaintenance) {
+            // Rule Engine
+            List<ThresholdRule> rules = thresholdRuleService.getApplicableRules(
+                    request.getDeviceId(), request.getMetricType());
 
-                AlertSeverity severity = calculateSeverity(request.getValue(), rule);
-                String message = buildAlertMessage(request, rule);
+            for (ThresholdRule rule : rules) {
+                if (rule.isViolated(request.getValue())) {
+                    reading.setAnomaly(true);
 
-                Alert alert = Alert.builder()
-                        .deviceId(request.getDeviceId())
-                        .telemetryReadingId(reading.getId())
-                        .metricType(request.getMetricType())
-                        .severity(severity)
-                        .message(message)
-                        .actualValue(request.getValue())
-                        .thresholdMin(rule.getMinValue())
-                        .thresholdMax(rule.getMaxValue())
-                        .resolved(false)
-                        .build();
+                    AlertSeverity severity = calculateSeverity(request.getValue(), rule);
+                    String message = buildAlertMessage(request, rule);
 
-                alertService.createAlert(alert);
-                log.warn("ANOMALY DETECTED on device {}: {} = {} (rule: {})",
-                        request.getDeviceId(), request.getMetricType(),
-                        request.getValue(), rule.getId());
-                break;
+                    Alert alert = Alert.builder()
+                            .deviceId(request.getDeviceId())
+                            .telemetryReadingId(reading.getId())
+                            .metricType(request.getMetricType())
+                            .severity(severity)
+                            .message(message)
+                            .actualValue(request.getValue())
+                            .thresholdMin(rule.getMinValue())
+                            .thresholdMax(rule.getMaxValue())
+                            .resolved(false)
+                            .build();
+
+                    Alert savedAlert = alertService.createAlert(alert);
+
+                    // Trigger webhooks
+                    webhookService.triggerWebhooks(savedAlert);
+
+                    log.warn("ANOMALY DETECTED on device {}: {} = {} (rule: {})",
+                            request.getDeviceId(), request.getMetricType(),
+                            request.getValue(), rule.getId());
+                    break;
+                }
             }
+        } else {
+            log.debug("Device {} is under maintenance — skipping anomaly detection", request.getDeviceId());
         }
 
         TelemetryReading saved = telemetryRepository.save(reading);

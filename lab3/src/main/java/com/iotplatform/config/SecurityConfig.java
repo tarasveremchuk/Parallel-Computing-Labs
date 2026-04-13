@@ -36,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers("/v1/auth/forgot-password", "/v1/auth/reset-password").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+
+                        // System health - public
+                        .requestMatchers("/v1/system/health").permitAll()
                         // Users management - ADMIN only
                         .requestMatchers("/v1/users/**").hasRole("ADMIN")
 
@@ -58,6 +61,21 @@ public class SecurityConfig {
 
                         // Simulator
                         .requestMatchers(HttpMethod.POST, "/v1/simulator/**").hasRole("ADMIN")
+                        // Audit - ADMIN only
+                        .requestMatchers("/v1/audit/**").hasRole("ADMIN")
+
+                        // Maintenance - ADMIN
+                        .requestMatchers(HttpMethod.POST, "/v1/maintenance").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/v1/maintenance/*/cancel").hasRole("ADMIN")
+
+                        // Groups - ADMIN for create/update/delete
+                        .requestMatchers(HttpMethod.POST, "/v1/groups").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/v1/groups/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/v1/groups/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/v1/groups/*/devices/*").hasRole("ADMIN")
+
+                        // Commands - ADMIN + OPERATOR
+                        .requestMatchers(HttpMethod.POST, "/v1/commands").hasAnyRole("ADMIN", "OPERATOR")
 
                         // Everything else requires authentication
                         .anyRequest().authenticated()
