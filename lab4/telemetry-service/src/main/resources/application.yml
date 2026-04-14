@@ -1,0 +1,40 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: telemetry-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iot_telemetry_db?TimeZone=Europe/Kyiv
+    username: iot_user
+    password: iot_pass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+app:
+  jwt:
+    secret: IoTPlatformSuperSecretKeyThatIsAtLeast256BitsLong2026
+    expiration-ms: 86400000
+
+services:
+  auth-service:
+    url: http://localhost:8081/api
+  device-service:
+    url: http://localhost:8082/api
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.iotplatform: DEBUG
