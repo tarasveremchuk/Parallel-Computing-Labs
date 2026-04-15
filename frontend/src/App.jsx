@@ -11,6 +11,8 @@ import TelemetryPage from './pages/telemetry/TelemetryPage';
 import RulesPage from './pages/rules/RulesPage';
 import UsersPage from './pages/users/UsersPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import GroupsPage from './pages/groups/GroupsPage';
+import WebhooksPage from './pages/webhooks/WebhooksPage';
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -63,6 +65,8 @@ function AppRoutes() {
 <Route path="alerts" element={<AlertsPage />} />        
 <Route path="rules" element={<RulesPage />} />
 <Route path="users" element={<UsersPage />} />
+<Route path="groups" element={<GroupsPage />} />
+        <Route path="webhooks" element={<WebhooksPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { alertsAPI } from '../../api/alerts';
 import Header from '../../components/layout/Header';
 import './Alerts.css';
-
+import { systemAPI } from '../../api/system';
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +10,19 @@ export default function AlertsPage() {
   const [resolving, setResolving] = useState(null);
   const [resolveNote, setResolveNote] = useState('');
   const [showResolve, setShowResolve] = useState(null);
-
+const handleExportAlerts = async () => {
+    try {
+      const res = await systemAPI.exportAlerts();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'alerts_export.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Export failed');
+    }
+  };
   const fetchAlerts = async () => {
     try {
       const params = { size: 50, sortBy: 'createdAt', direction: 'desc' };
@@ -89,6 +101,14 @@ export default function AlertsPage() {
             Unresolved only
           </button>
         </div>
+      <button className="export-btn" onClick={handleExportAlerts}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export CSV
+        </button>
       </div>
 
       {showResolve && (

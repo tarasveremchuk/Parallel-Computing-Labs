@@ -358,3 +358,113 @@
   font-size: 13px;
   color: #3f3f46;
 }
+
+
+/* === SYSTEM HEALTH === */
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.health-status.up { color: #10b981; }
+.health-status.down { color: #ef4444; }
+
+.health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.health-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: 6px;
+}
+
+.health-item-label {
+  font-size: 12px;
+  color: #52525b;
+}
+
+.health-item-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.health-item-value.up { color: #10b981; }
+.health-item-value.down { color: #ef4444; }
+
+/* === ACTIVITY FEED === */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.activity-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.activity-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.activity-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.activity-action {
+  font-size: 12px;
+  font-weight: 500;
+  color: #d4d4d8;
+  text-transform: capitalize;
+}
+
+.activity-details {
+  font-size: 11px;
+  color: #52525b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-user {
+  color: #71717a;
+  font-weight: 500;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: #3f3f46;
+  flex-shrink: 0;
+}

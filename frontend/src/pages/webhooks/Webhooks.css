@@ -1,0 +1,26 @@
+.webhooks-list { display: flex; flex-direction: column; gap: 8px; }
+
+.webhook-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: rgba(255,255,255,0.02);
+  border: 0.5px solid #1a1a1e; border-radius: 10px; transition: border-color 0.2s;
+}
+.webhook-card:hover { border-color: #27272a; }
+.webhook-card.inactive { opacity: 0.45; }
+
+.webhook-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+
+.webhook-icon {
+  width: 36px; height: 36px; background: rgba(59,130,246,0.06);
+  border: 0.5px solid rgba(59,130,246,0.12); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #3b82f6; flex-shrink: 0;
+}
+
+.webhook-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.webhook-name { font-size: 13px; font-weight: 600; color: #d4d4d8; }
+.webhook-url { font-size: 11px; color: #52525b; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.webhook-meta { font-size: 11px; color: #3f3f46; display: flex; gap: 4px; align-items: center; }
+.webhook-severity { background: rgba(245,158,11,0.08); color: #f59e0b; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+
+.webhook-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }

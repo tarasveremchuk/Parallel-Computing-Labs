@@ -4,7 +4,7 @@ import { devicesAPI } from '../../api/devices';
 import Header from '../../components/layout/Header';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import './Telemetry.css';
-
+import { systemAPI } from '../../api/system';
 export default function TelemetryPage() {
   const [readings, setReadings] = useState([]);
   const [devices, setDevices] = useState([]);
@@ -64,7 +64,19 @@ export default function TelemetryPage() {
     const device = devices.find((d) => d.id === deviceId);
     return device?.name || deviceId?.substring(0, 8) + '...';
   };
-
+  const handleExportTelemetry = async () => {
+    try {
+      const res = await systemAPI.exportTelemetry();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'telemetry_export.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Export failed');
+    }
+  };
   const metricTypes = ['TEMPERATURE', 'CPU_USAGE', 'MEMORY_USAGE', 'NETWORK_TRAFFIC', 'VOLTAGE', 'HUMIDITY', 'DISK_USAGE'];
 
   const CustomTooltip = ({ active, payload }) => {
@@ -86,7 +98,7 @@ export default function TelemetryPage() {
     <div className="telemetry-page">
       <Header title="Telemetry" subtitle={`${readings.length} reading(s)`} />
 
-      <div className="devices-toolbar">
+<div className="devices-toolbar">
         <div className="devices-filters">
           <select
             value={filter.deviceId}
@@ -110,6 +122,15 @@ export default function TelemetryPage() {
             ))}
           </select>
         </div>
+
+        <button className="export-btn" onClick={handleExportTelemetry}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export CSV
+        </button>
       </div>
 
       {chartData.length > 0 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { devicesAPI } from '../../api/devices';
+import { groupsAPI } from '../../api/groups';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/layout/Header';
 import './Devices.css';
@@ -13,6 +14,9 @@ export default function DeviceList() {
   const [createForm, setCreateForm] = useState({ name: '', type: 'SENSOR', location: '', firmwareVersion: '' });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [groupDeviceIds, setGroupDeviceIds] = useState(null);
   const [editDevice, setEditDevice] = useState(null);
 const [editForm, setEditForm] = useState({ name: '', type: '', location: '', firmwareVersion: '' });
 const [editing, setEditing] = useState(false);
@@ -35,6 +39,29 @@ setDevices(res.data.content || []);    } catch (err) {
   useEffect(() => {
     fetchDevices();
   }, [filter]);
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await groupsAPI.getAll();
+        setGroups(res.data.data || []);
+      } catch (err) { console.error(err); }
+    };
+    fetchGroups();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGroup) {
+      setGroupDeviceIds(null);
+      return;
+    }
+    const fetchGroupDevices = async () => {
+      try {
+        const res = await groupsAPI.getById(selectedGroup);
+        setGroupDeviceIds(res.data.data?.deviceIds || []);
+      } catch (err) { console.error(err); }
+    };
+    fetchGroupDevices();
+  }, [selectedGroup]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -109,13 +136,26 @@ setDevices(res.data.content || []);    } catch (err) {
       </div>
     );
   }
+  const filteredDevices = groupDeviceIds
+    ? devices.filter((d) => groupDeviceIds.includes(d.id))
+    : devices;
 
   return (
     <div className="devices-page">
-      <Header title="Devices" subtitle={`${devices.length} registered device(s)`} />
+      <Header title="Devices" subtitle={`${filteredDevices.length} device(s)${selectedGroup ? ' in group' : ''}`} />
 
       <div className="devices-toolbar">
         <div className="devices-filters">
+          <select
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All groups</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
           <select
             value={filter.status}
             onChange={(e) => setFilter({ ...filter, status: e.target.value })}
@@ -299,7 +339,7 @@ setDevices(res.data.content || []);    } catch (err) {
             </tr>
           </thead>
           <tbody>
-            {devices.map((device) => (
+            {filteredDevices.map((device) => (
               <tr key={device.id} onClick={() => navigate(`/devices/${device.id}`)} className="device-row">
                 <td>
                   <div className="device-name-cell">
@@ -346,7 +386,7 @@ setDevices(res.data.content || []);    } catch (err) {
           </tbody>
         </table>
 
-        {devices.length === 0 && (
+        {filteredDevices.length === 0 && (
           <div className="empty-state">No devices found</div>
         )}
       </div>
