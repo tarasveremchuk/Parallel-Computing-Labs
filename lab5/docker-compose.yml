@@ -1,0 +1,102 @@
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: iot-postgres
+    environment:
+      POSTGRES_USER: iot_user
+      POSTGRES_PASSWORD: iot_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iot_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: iot-redis
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Microservices ────────────────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: iot-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iot_auth_db?TimeZone=Europe/Kyiv
+      SPRING_DATASOURCE_USERNAME: iot_user
+      SPRING_DATASOURCE_PASSWORD: iot_pass
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  device-service:
+    build:
+      context: .
+      dockerfile: device-service/Dockerfile
+    container_name: iot-device-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iot_device_db?TimeZone=Europe/Kyiv
+      SPRING_DATASOURCE_USERNAME: iot_user
+      SPRING_DATASOURCE_PASSWORD: iot_pass
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SERVICES_AUTH_SERVICE_URL: http://auth-service:8081/api
+      SERVICES_TELEMETRY_SERVICE_URL: http://telemetry-service:8083/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: on-failure
+
+  telemetry-service:
+    build:
+      context: .
+      dockerfile: telemetry-service/Dockerfile
+    container_name: iot-telemetry-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iot_telemetry_db?TimeZone=Europe/Kyiv
+      SPRING_DATASOURCE_USERNAME: iot_user
+      SPRING_DATASOURCE_PASSWORD: iot_pass
+      SERVICES_AUTH_SERVICE_URL: http://auth-service:8081/api
+      SERVICES_DEVICE_SERVICE_URL: http://device-service:8082/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      device-service:
+        condition: service_started
+    restart: on-failure
+
+volumes:
+  postgres_data:
+  redis_data:
