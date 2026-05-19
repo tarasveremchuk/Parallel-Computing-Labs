@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iot-config
+  namespace: iot-system
+data:
+  SPRING_DATASOURCE_USERNAME: iot_user
+  SPRING_DATASOURCE_PASSWORD: iot_pass
+  SPRING_DATA_REDIS_HOST: redis
+  SPRING_DATA_REDIS_PORT: "6379"
+  SERVICES_AUTH_SERVICE_URL: http://auth-service:8081/api
+  SERVICES_DEVICE_SERVICE_URL: http://device-service:8082/api
+  SERVICES_TELEMETRY_SERVICE_URL: http://telemetry-service:8083/api

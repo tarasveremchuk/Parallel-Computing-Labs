@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-service
+  namespace: iot-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: device-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: device-service
+    spec:
+      containers:
+        - name: device-service
+          image: iot-microservices-device-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/iot_device_db?TimeZone=Europe/Kyiv
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SPRING_DATA_REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SPRING_DATA_REDIS_PORT
+            - name: SERVICES_AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SERVICES_AUTH_SERVICE_URL
+            - name: SERVICES_TELEMETRY_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SERVICES_TELEMETRY_SERVICE_URL
+          readinessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 10

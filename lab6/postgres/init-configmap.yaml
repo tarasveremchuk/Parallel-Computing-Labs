@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: iot-system
+data:
+  init-db.sql: |
+    CREATE DATABASE iot_auth_db;
+    CREATE DATABASE iot_device_db;
+    CREATE DATABASE iot_telemetry_db;

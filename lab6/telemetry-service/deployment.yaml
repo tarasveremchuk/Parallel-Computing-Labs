@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-service
+  namespace: iot-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetry-service
+  template:
+    metadata:
+      labels:
+        app: telemetry-service
+    spec:
+      containers:
+        - name: telemetry-service
+          image: iot-microservices-telemetry-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/iot_telemetry_db?TimeZone=Europe/Kyiv
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: SERVICES_AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SERVICES_AUTH_SERVICE_URL
+            - name: SERVICES_DEVICE_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: iot-config
+                  key: SERVICES_DEVICE_SERVICE_URL
+          readinessProbe:
+            tcpSocket:
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 10
